@@ -44,29 +44,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDemo_Web_Key_Replace_With_Actual',
-    appId: '1:123456789:web:demo_app_id',
-    messagingSenderId: '123456789',
-    projectId: 'student-reminder-demo',
-    authDomain: 'student-reminder-demo.firebaseapp.com',
-    storageBucket: 'student-reminder-demo.appspot.com',
-    measurementId: 'G-DEMO123456',
+    apiKey: 'AIzaSyB_pn5ubZFiyF2RBSrEi25wrUQa3zisf8Y',
+    appId: '1:635871222227:web:your_web_app_id', // You'll need to get this from Firebase Console
+    messagingSenderId: '635871222227',
+    projectId: 'friendly-hangar-410917',
+    authDomain: 'friendly-hangar-410917.firebaseapp.com',
+    storageBucket: 'friendly-hangar-410917.appspot.com',
+    measurementId: 'G-MEASUREMENT_ID', // You'll need to get this from Firebase Console
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDemo_Android_Key_Replace_With_Actual',
-    appId: '1:123456789:android:demo_app_id',
-    messagingSenderId: '123456789',
-    projectId: 'student-reminder-demo',
-    storageBucket: 'student-reminder-demo.appspot.com',
+    apiKey: 'AIzaSyB_pn5ubZFiyF2RBSrEi25wrUQa3zisf8Y',
+    appId: '1:635871222227:android:2396f4f1955078d8c6f726',
+    messagingSenderId: '635871222227',
+    projectId: 'friendly-hangar-410917',
+    storageBucket: 'friendly-hangar-410917.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDemo_iOS_Key_Replace_With_Actual',
-    appId: '1:123456789:ios:demo_app_id',
-    messagingSenderId: '123456789',
-    projectId: 'student-reminder-demo',
-    storageBucket: 'student-reminder-demo.appspot.com',
+    apiKey: 'AIzaSyB_pn5ubZFiyF2RBSrEi25wrUQa3zisf8Y',
+    appId: '1:635871222227:ios:your_ios_app_id', // You'll need to get this from your iOS app in Firebase Console
+    messagingSenderId: '635871222227',
+    projectId: 'friendly-hangar-410917',
+    storageBucket: 'friendly-hangar-410917.appspot.com',
     iosBundleId: 'com.example.studentReminderApp',
   );
 

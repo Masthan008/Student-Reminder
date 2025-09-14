@@ -178,10 +178,43 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ),
                 const SizedBox(height: 24),
 
+                // Demo mode info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info, color: Colors.blue[700], size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Demo Mode',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'This app is running in demo mode. Authentication is simulated for testing purposes.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 // Skip for now button (demo purposes)
                 TextButton(
                   onPressed: () => context.go('/home'),
-                  child: const Text('Skip for now'),
+                  child: const Text('Skip Authentication (Demo)'),
                 ),
               ],
             ),

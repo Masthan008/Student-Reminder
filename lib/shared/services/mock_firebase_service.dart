@@ -1,29 +1,31 @@
-import '../services/firebase_service.dart';
 import '../../features/reminders/domain/reminder.dart';
-import '../../features/auth/domain/user.dart';
+import '../../features/auth/domain/user.dart' as app_user;
+import '../../core/errors/exceptions.dart';
+import 'firebase_service.dart';
 
-/// Mock Firebase service for demo/offline mode
+/// Mock Firebase service for development/demo purposes
+/// This allows the app to work without real Firebase configuration
 class MockFirebaseService implements FirebaseService {
-  User? _currentUser;
+  app_user.User? _currentUser;
   final List<Reminder> _reminders = [];
-  final Map<String, User> _users = {};
+  final Map<String, app_user.User> _users = {};
 
   @override
-  User? get currentUser => _currentUser;
+  app_user.User? get currentUser => _currentUser;
 
   @override
-  Stream<User?> get authStateChanges => Stream.value(_currentUser);
+  Stream<app_user.User?> get authStateChanges => Stream.value(_currentUser);
 
   @override
-  Future<User?> signInWithGoogle() async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<app_user.User?> signInWithGoogle() async {
+    // Simulate Google sign-in delay
+    await Future.delayed(const Duration(seconds: 1));
     
-    final user = User.create(
-      id: 'demo_google_user_${DateTime.now().millisecondsSinceEpoch}',
-      email: 'demo.user@gmail.com',
-      displayName: 'Demo Google User',
-      photoUrl: null,
+    final user = app_user.User.create(
+      id: 'mock_google_user_${DateTime.now().millisecondsSinceEpoch}',
+      email: 'demo@gmail.com',
+      displayName: 'Demo User (Google)',
+      photoUrl: 'https://via.placeholder.com/150',
     );
     
     _currentUser = user;
@@ -32,24 +34,25 @@ class MockFirebaseService implements FirebaseService {
   }
 
   @override
-  Future<User?> signInWithEmail(String email, String password) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<app_user.User?> signInWithEmail(String email, String password) async {
+    // Simulate email sign-in delay
+    await Future.delayed(const Duration(seconds: 1));
     
     // Basic validation
     if (email.isEmpty || password.isEmpty) {
-      throw Exception('Email and password are required');
+      throw const AuthException('Email and password are required');
     }
-    
     if (password.length < 6) {
-      throw Exception('Password must be at least 6 characters');
+      throw const AuthException('Password must be at least 6 characters');
     }
-    
-    final user = User.create(
-      id: 'demo_email_user_${DateTime.now().millisecondsSinceEpoch}',
+    if (!email.contains('@')) {
+      throw const AuthException('Please enter a valid email address');
+    }
+
+    final user = app_user.User.create(
+      id: 'mock_email_user_${DateTime.now().millisecondsSinceEpoch}',
       email: email,
-      displayName: email.split('@')[0].replaceAll('.', ' ').toUpperCase(),
-      photoUrl: null,
+      displayName: email.split('@')[0], // Use email prefix as display name
     );
     
     _currentUser = user;
@@ -58,24 +61,25 @@ class MockFirebaseService implements FirebaseService {
   }
 
   @override
-  Future<User?> createUserWithEmail(String email, String password, String displayName) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<app_user.User?> createUserWithEmail(String email, String password, String displayName) async {
+    // Simulate account creation delay
+    await Future.delayed(const Duration(seconds: 1));
     
     // Basic validation
     if (email.isEmpty || password.isEmpty || displayName.isEmpty) {
-      throw Exception('All fields are required');
+      throw const AuthException('All fields are required');
     }
-    
     if (password.length < 6) {
-      throw Exception('Password must be at least 6 characters');
+      throw const AuthException('Password must be at least 6 characters');
     }
-    
-    final user = User.create(
-      id: 'demo_new_user_${DateTime.now().millisecondsSinceEpoch}',
+    if (!email.contains('@')) {
+      throw const AuthException('Please enter a valid email address');
+    }
+
+    final user = app_user.User.create(
+      id: 'mock_new_user_${DateTime.now().millisecondsSinceEpoch}',
       email: email,
       displayName: displayName,
-      photoUrl: null,
     );
     
     _currentUser = user;
@@ -85,40 +89,42 @@ class MockFirebaseService implements FirebaseService {
 
   @override
   Future<void> signOut() async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 300));
+    // Simulate sign-out delay
+    await Future.delayed(const Duration(milliseconds: 500));
     _currentUser = null;
   }
 
   @override
   Future<void> addReminder(Reminder reminder) async {
     // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 300));
     _reminders.add(reminder);
   }
 
   @override
   Future<void> updateReminder(Reminder reminder) async {
     // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 300));
     
     final index = _reminders.indexWhere((r) => r.id == reminder.id);
     if (index != -1) {
       _reminders[index] = reminder;
+    } else {
+      throw const NetworkException('Reminder not found');
     }
   }
 
   @override
   Future<void> deleteReminder(String reminderId) async {
     // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 300));
     _reminders.removeWhere((r) => r.id == reminderId);
   }
 
   @override
   Future<List<Reminder>> getReminders(String userId) async {
     // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 500));
     return _reminders.where((r) => r.userId == userId).toList();
   }
 
@@ -131,22 +137,23 @@ class MockFirebaseService implements FirebaseService {
 
   @override
   Future<void> syncReminders(List<Reminder> reminders) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Simulate sync delay
+    await Future.delayed(const Duration(seconds: 1));
+    
     _reminders.clear();
     _reminders.addAll(reminders);
   }
 
   @override
-  Future<void> saveUserData(User user) async {
-    // Simulate network delay
+  Future<void> saveUserData(app_user.User user) async {
+    // Simulate save delay
     await Future.delayed(const Duration(milliseconds: 200));
     _users[user.id] = user;
   }
 
   @override
-  Future<User?> getUserData(String userId) async {
-    // Simulate network delay
+  Future<app_user.User?> getUserData(String userId) async {
+    // Simulate fetch delay
     await Future.delayed(const Duration(milliseconds: 200));
     return _users[userId];
   }
