@@ -45,6 +45,12 @@ class Reminder extends HiveObject {
   @HiveField(8)
   final String userId;
 
+  @HiveField(9)
+  final String? soundUrl;
+
+  @HiveField(10)
+  final String? soundName;
+
   Reminder({
     required this.id,
     required this.title,
@@ -55,6 +61,8 @@ class Reminder extends HiveObject {
     required this.createdAt,
     required this.updatedAt,
     required this.userId,
+    this.soundUrl,
+    this.soundName,
   });
 
   // Factory constructor for creating a new reminder
@@ -64,6 +72,8 @@ class Reminder extends HiveObject {
     required DateTime dateTime,
     required RepeatOption repeatOption,
     required String userId,
+    String? soundUrl,
+    String? soundName,
   }) {
     final now = DateTime.now();
     return Reminder(
@@ -76,6 +86,8 @@ class Reminder extends HiveObject {
       createdAt: now,
       updatedAt: now,
       userId: userId,
+      soundUrl: soundUrl,
+      soundName: soundName,
     );
   }
 
@@ -90,6 +102,8 @@ class Reminder extends HiveObject {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? userId,
+    String? soundUrl,
+    String? soundName,
   }) {
     return Reminder(
       id: id ?? this.id,
@@ -101,6 +115,8 @@ class Reminder extends HiveObject {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       userId: userId ?? this.userId,
+      soundUrl: soundUrl ?? this.soundUrl,
+      soundName: soundName ?? this.soundName,
     );
   }
 
@@ -116,6 +132,8 @@ class Reminder extends HiveObject {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'userId': userId,
+      'soundUrl': soundUrl,
+      'soundName': soundName,
     };
   }
 
@@ -134,6 +152,8 @@ class Reminder extends HiveObject {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       userId: json['userId'] as String,
+      soundUrl: json['soundUrl'] as String?,
+      soundName: json['soundName'] as String?,
     );
   }
 

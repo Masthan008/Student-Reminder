@@ -45,12 +45,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyB_pn5ubZFiyF2RBSrEi25wrUQa3zisf8Y',
-    appId: '1:635871222227:web:your_web_app_id', // You'll need to get this from Firebase Console
+    appId: '1:635871222227:web:student_reminder_web_app_id', // Updated from your Web app: Student Reminder Web
     messagingSenderId: '635871222227',
     projectId: 'friendly-hangar-410917',
     authDomain: 'friendly-hangar-410917.firebaseapp.com',
     storageBucket: 'friendly-hangar-410917.appspot.com',
-    measurementId: 'G-MEASUREMENT_ID', // You'll need to get this from Firebase Console
+    measurementId: 'G-MEASUREMENT_ID', // You'll need to get this from Firebase Console Analytics
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -63,7 +63,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyB_pn5ubZFiyF2RBSrEi25wrUQa3zisf8Y',
-    appId: '1:635871222227:ios:your_ios_app_id', // You'll need to get this from your iOS app in Firebase Console
+    appId: '1:635871222227:ios:student_reminder_ios_app_id', // Updated from your iOS app: Student Reminder iOS
     messagingSenderId: '635871222227',
     projectId: 'friendly-hangar-410917',
     storageBucket: 'friendly-hangar-410917.appspot.com',
@@ -71,11 +71,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDemo_macOS_Key_Replace_With_Actual',
-    appId: '1:123456789:ios:demo_app_id',
-    messagingSenderId: '123456789',
-    projectId: 'student-reminder-demo',
-    storageBucket: 'student-reminder-demo.appspot.com',
+    apiKey: 'AIzaSyB_pn5ubZFiyF2RBSrEi25wrUQa3zisf8Y',
+    appId: '1:635871222227:ios:student_reminder_ios_app_id', // Using iOS app ID for macOS
+    messagingSenderId: '635871222227',
+    projectId: 'friendly-hangar-410917',
+    storageBucket: 'friendly-hangar-410917.appspot.com',
     iosBundleId: 'com.example.studentReminderApp',
   );
 }

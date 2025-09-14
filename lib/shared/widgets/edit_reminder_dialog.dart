@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/reminders/domain/reminder.dart';
 import '../../core/utils/date_utils.dart';
 import '../../core/utils/validation_utils.dart';
+import '../../features/reminders/presentation/widgets/sound_settings_widget.dart';
 import '../providers/reminder_provider.dart';
 
 class EditReminderDialog extends ConsumerStatefulWidget {
@@ -22,6 +23,8 @@ class _EditReminderDialogState extends ConsumerState<EditReminderDialog> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   late RepeatOption _repeatOption;
+  late String? _selectedSoundUrl;
+  late String? _selectedSoundName;
 
   @override
   void initState() {
@@ -31,6 +34,8 @@ class _EditReminderDialogState extends ConsumerState<EditReminderDialog> {
     _selectedDate = widget.reminder.dateTime;
     _selectedTime = TimeOfDay.fromDateTime(widget.reminder.dateTime);
     _repeatOption = widget.reminder.repeatOption;
+    _selectedSoundUrl = widget.reminder.soundUrl;
+    _selectedSoundName = widget.reminder.soundName;
   }
 
   @override
@@ -133,6 +138,20 @@ class _EditReminderDialogState extends ConsumerState<EditReminderDialog> {
                   subtitle: Text(_getRepeatText(_repeatOption)),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _selectRepeatOption,
+                ),
+                const SizedBox(height: 16),
+
+                // Sound Settings
+                SoundSettingsWidget(
+                  selectedSoundUrl: _selectedSoundUrl,
+                  selectedSoundName: _selectedSoundName,
+                  onSoundChanged: (soundUrl, soundName) {
+                    setState(() {
+                      _selectedSoundUrl = soundUrl;
+                      _selectedSoundName = soundName;
+                    });
+                  },
+                  userId: widget.reminder.userId,
                 ),
                 const SizedBox(height: 24),
 
@@ -241,6 +260,8 @@ class _EditReminderDialogState extends ConsumerState<EditReminderDialog> {
       description: _descriptionController.text.trim(),
       dateTime: dateTime,
       repeatOption: _repeatOption,
+      soundUrl: _selectedSoundUrl,
+      soundName: _selectedSoundName,
     );
 
     ref.read(remindersProvider.notifier).updateReminder(updatedReminder);

@@ -1,78 +1,83 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'firebase_options.dart';
 import 'app/app.dart';
 import 'shared/services/local_storage_service.dart';
+import 'shared/services/firebase_debug_service.dart';
+import 'shared/services/backend_config_service.dart';
+import 'shared/services/mobile_backend_config_service.dart';
+import 'shared/services/web_local_service.dart';
+import 'shared/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  try {
-    // Try to initialize Firebase, but continue if it fails (for demo mode)
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      print('Firebase initialized successfully');
-    } catch (firebaseError) {
-      print('Firebase initialization failed (running in demo mode): $firebaseError');
-      // Continue without Firebase - app will work in offline/demo mode
-    }
-    
-    // Initialize Hive for local storage
-    await Hive.initFlutter();
-    
-    // Initialize local storage service
-    final storageService = HiveLocalStorageService();
-    await storageService.initialize();
-    
-    runApp(
-      const ProviderScope(
-        child: StudentReminderApp(),
-      ),
-    );
-  } catch (e) {
-    // Handle initialization errors gracefully
-    // In development, show error details
-    // In production, you might want to show a generic error message
-    runApp(
-      MaterialApp(
-        title: 'Student Reminder - Error',
-        home: Scaffold(
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Failed to initialize app',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Error: $e',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Restart the app
-                      main();
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  print('Firebase initialized successfully');
+  
+  // Initialize Backend Configuration (Firebase + Supabase support)
+  await BackendConfigService.initialize();
+  print('Backend configuration initialized: ${BackendConfigService.currentBackend.displayName}');
+  
+  // Initialize web service if on web platform
+  if (kIsWeb) {
+    final webService = WebLocalService();
+    await webService.initialize();
+    print('Web Local Service initialized');
   }
+  
+  // Test Firebase connection
+  if (kDebugMode) {
+    await FirebaseDebugService.testFirebaseConnection();
+    FirebaseDebugService.logAuthState();
+  }
+  
+  // Initialize Firebase App Check (skip for web in debug mode to avoid JS errors)
+  if (!kIsWeb) {
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.debug,
+        appleProvider: AppleProvider.debug,
+      );
+      print('Firebase App Check activated for mobile platforms');
+    } catch (e) {
+      print('Firebase App Check initialization failed, continuing without it: $e');
+    }
+  } else {
+    print('Firebase App Check skipped for web platform in debug mode');
+  }
+  
+  // Initialize Hive for local storage
+  await Hive.initFlutter();
+  
+  // Initialize local storage service
+  final storageService = HiveLocalStorageService();
+  await storageService.initialize();
+  
+  // Initialize notification service (for mobile platforms)
+  if (!kIsWeb) {
+    try {
+      final notificationService = NotificationServiceImpl();
+      await notificationService.initialize();
+      await notificationService.requestPermissions();
+      print('Notification service initialized and permissions requested');
+    } catch (e) {
+      print('Notification service initialization failed: $e');
+    }
+  } else {
+    print('Notification service skipped for web platform');
+  }
+  
+  runApp(
+    const ProviderScope(
+      child: StudentReminderApp(),
+    ),
+  );
 }

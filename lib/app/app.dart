@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +33,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
+      // For web platform, skip authentication and go directly to home
+      if (kIsWeb) {
+        if (state.matchedLocation == '/' || state.matchedLocation == '/auth') {
+          return '/home';
+        }
+        return null;
+      }
+      
+      // Mobile platforms - keep authentication logic
       final isLoggedIn = authState.user != null;
       final isLoggingIn = state.matchedLocation == '/auth';
       

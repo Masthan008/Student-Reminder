@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,10 +52,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 
+                      MediaQuery.of(context).padding.top - 
+                      MediaQuery.of(context).padding.bottom - 48, // 24*2 padding
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                 // App Logo and Title
                 Icon(
                   Icons.school,
@@ -151,12 +160,38 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Google Sign In Button
-                OutlinedButton.icon(
-                  onPressed: authState.isLoading ? null : _handleGoogleSignIn,
-                  icon: const Icon(Icons.g_mobiledata),
-                  label: const Text('Continue with Google'),
-                ),
+                // Google Sign In Button (disabled on web)
+                if (!kIsWeb) ...[
+                  OutlinedButton.icon(
+                    onPressed: authState.isLoading ? null : _handleGoogleSignIn,
+                    icon: const Icon(Icons.g_mobiledata),
+                    label: const Text('Continue with Google'),
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.orange[700], size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Google Sign-In not available on web. Use email/password.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 // Toggle Sign In/Up
@@ -216,7 +251,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   onPressed: () => context.go('/home'),
                   child: const Text('Skip Authentication (Demo)'),
                 ),
-              ],
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),

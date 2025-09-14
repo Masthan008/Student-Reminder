@@ -1,20 +1,20 @@
 {
   "project_info": {
-    "project_number": "123456789",
-    "project_id": "student-reminder-demo",
-    "storage_bucket": "student-reminder-demo.appspot.com"
+    "project_number": "635871222227",
+    "project_id": "friendly-hangar-410917",
+    "storage_bucket": "friendly-hangar-410917.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789:android:demo_app_id",
+        "mobilesdk_app_id": "1:635871222227:android:2396f4f1955078d8c6f726",
         "android_client_info": {
           "package_name": "com.example.student_reminder_app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "123456789-demo_client_id.apps.googleusercontent.com",
+          "client_id": "635871222227-demo_client_id.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.student_reminder_app",
@@ -22,20 +22,20 @@
           }
         },
         {
-          "client_id": "123456789-demo_web_client_id.apps.googleusercontent.com",
+          "client_id": "635871222227-demo_web_client_id.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDemo_Android_Key_Replace_With_Actual"
+          "current_key": "AIzaSyB_pn5ubZFiyF2RBSrEi25wrUQa3zisf8Y"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "123456789-demo_web_client_id.apps.googleusercontent.com",
+              "client_id": "635871222227-demo_web_client_id.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

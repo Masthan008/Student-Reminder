@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/firebase_service.dart';
+import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/domain/user.dart';
 import '../../core/errors/exceptions.dart';
-import 'firebase_provider.dart';
 
 class AuthState {
   final User? user;
@@ -29,11 +28,11 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final FirebaseService _firebaseService;
+  final AuthRepository _authRepository;
 
-  AuthNotifier(this._firebaseService) : super(const AuthState()) {
+  AuthNotifier(this._authRepository) : super(const AuthState()) {
     // Listen to auth state changes
-    _firebaseService.authStateChanges.listen((user) {
+    _authRepository.authStateChanges.listen((user) {
       state = state.copyWith(user: user, isLoading: false);
     });
   }
@@ -41,7 +40,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user = await _firebaseService.signInWithGoogle();
+      final user = await _authRepository.signInWithGoogle();
       state = state.copyWith(user: user, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -54,7 +53,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signInWithEmail(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user = await _firebaseService.signInWithEmail(email, password);
+      final user = await _authRepository.signInWithEmail(email, password);
       state = state.copyWith(user: user, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -67,7 +66,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> createAccount(String email, String password, String displayName) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user = await _firebaseService.createUserWithEmail(email, password, displayName);
+      final user = await _authRepository.createUserWithEmail(email, password, displayName);
       state = state.copyWith(user: user, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -80,7 +79,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      await _firebaseService.signOut();
+      await _authRepository.signOut();
       state = state.copyWith(user: null, isLoading: false);
     } catch (e) {
       state = state.copyWith(
@@ -96,8 +95,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final firebaseService = ref.read(firebaseServiceProvider);
-  return AuthNotifier(firebaseService);
+  final authRepository = ref.read(authRepositoryProvider);
+  return AuthNotifier(authRepository);
 });
 
 // Provider for checking if user is authenticated

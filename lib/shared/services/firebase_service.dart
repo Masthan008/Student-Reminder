@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 import '../../features/reminders/domain/reminder.dart';
 import '../../features/auth/domain/user.dart' as app_user;
 import '../../core/constants/app_constants.dart';
@@ -31,10 +33,34 @@ abstract class FirebaseService {
 class FirebaseServiceImpl implements FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  late final GoogleSignIn _googleSignIn;
 
-  // Flag to check if Firebase is properly configured
-  bool _isFirebaseConfigured = false;
+  FirebaseServiceImpl() {
+    // Initialize GoogleSignIn with platform-specific configuration
+    if (kIsWeb) {
+      // For web, we can skip Google Sign-In or configure it properly later
+      _googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+        // You can add clientId here if you have it: clientId: 'your-web-client-id'
+      );
+    } else {
+      // For mobile platforms
+      _googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
+    }
+  }
+
+  // Check if Firebase is properly configured
+  bool get _isFirebaseConfigured {
+    try {
+      // Check if Firebase app is initialized
+      Firebase.app();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
   // Authentication methods
   @override
@@ -61,15 +87,13 @@ class FirebaseServiceImpl implements FirebaseService {
   @override
   Future<app_user.User?> signInWithGoogle() async {
     try {
-      // For demo purposes, create a mock Google user when Firebase is not configured
       if (!_isFirebaseConfigured) {
-        final mockUser = app_user.User.create(
-          id: 'demo_google_user_${DateTime.now().millisecondsSinceEpoch}',
-          email: 'demo.user@gmail.com',
-          displayName: 'Demo Google User',
-          photoUrl: null,
-        );
-        return mockUser;
+        throw AuthException('Firebase is not properly configured');
+      }
+
+      // Skip Google Sign-In on web if not properly configured
+      if (kIsWeb) {
+        throw AuthException('Google Sign-In is not configured for web platform. Please use email/password authentication.');
       }
 
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -91,29 +115,15 @@ class FirebaseServiceImpl implements FirebaseService {
       
       return user;
     } catch (e) {
-      // Fallback to demo user if Google Sign-In fails
-      final mockUser = app_user.User.create(
-        id: 'demo_google_user_${DateTime.now().millisecondsSinceEpoch}',
-        email: 'demo.user@gmail.com',
-        displayName: 'Demo Google User',
-        photoUrl: null,
-      );
-      return mockUser;
+      throw AuthException('Google sign-in failed: $e');
     }
   }
 
   @override
   Future<app_user.User?> signInWithEmail(String email, String password) async {
     try {
-      // For demo purposes, create a mock user when Firebase is not configured
       if (!_isFirebaseConfigured) {
-        final mockUser = app_user.User.create(
-          id: 'demo_email_user_${DateTime.now().millisecondsSinceEpoch}',
-          email: email,
-          displayName: email.split('@')[0].replaceAll('.', ' ').toUpperCase(),
-          photoUrl: null,
-        );
-        return mockUser;
+        throw AuthException('Firebase is not properly configured');
       }
 
       final firebase_auth.UserCredential userCredential = 
@@ -124,29 +134,15 @@ class FirebaseServiceImpl implements FirebaseService {
       final userData = await getUserData(userCredential.user!.uid);
       return userData ?? _convertFirebaseUser(userCredential.user!);
     } catch (e) {
-      // Fallback to demo user if email sign-in fails
-      final mockUser = app_user.User.create(
-        id: 'demo_email_user_${DateTime.now().millisecondsSinceEpoch}',
-        email: email,
-        displayName: email.split('@')[0].replaceAll('.', ' ').toUpperCase(),
-        photoUrl: null,
-      );
-      return mockUser;
+      throw AuthException('Email sign-in failed: $e');
     }
   }
 
   @override
   Future<app_user.User?> createUserWithEmail(String email, String password, String displayName) async {
     try {
-      // For demo purposes, create a mock user when Firebase is not configured
       if (!_isFirebaseConfigured) {
-        final mockUser = app_user.User.create(
-          id: 'demo_new_user_${DateTime.now().millisecondsSinceEpoch}',
-          email: email,
-          displayName: displayName,
-          photoUrl: null,
-        );
-        return mockUser;
+        throw AuthException('Firebase is not properly configured');
       }
 
       final firebase_auth.UserCredential userCredential = 
@@ -167,14 +163,7 @@ class FirebaseServiceImpl implements FirebaseService {
       await saveUserData(user);
       return user;
     } catch (e) {
-      // Fallback to demo user if account creation fails
-      final mockUser = app_user.User.create(
-        id: 'demo_new_user_${DateTime.now().millisecondsSinceEpoch}',
-        email: email,
-        displayName: displayName,
-        photoUrl: null,
-      );
-      return mockUser;
+      throw AuthException('Account creation failed: $e');
     }
   }
 

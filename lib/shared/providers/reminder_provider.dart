@@ -1,19 +1,44 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../../features/reminders/domain/reminder.dart';
+import '../services/notification_service.dart';
 
 class ReminderNotifier extends StateNotifier<List<Reminder>> {
-  ReminderNotifier() : super([]);
+  final NotificationService _notificationService;
+  
+  ReminderNotifier(this._notificationService) : super([]);
   
   // Load reminders from local storage when initialized
   void loadReminders(List<Reminder> reminders) {
     state = reminders;
   }
 
-  void addReminder(Reminder reminder) {
+  Future<void> addReminder(Reminder reminder) async {
     state = [...state, reminder];
+    
+    // Schedule notification for the reminder
+    try {
+      await _notificationService.scheduleLocalNotification(reminder);
+      if (kDebugMode) {
+        print('📅 Notification scheduled for: ${reminder.title} at ${reminder.dateTime}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Failed to schedule notification: $e');
+      }
+    }
   }
 
-  void updateReminder(Reminder updatedReminder) {
+  Future<void> updateReminder(Reminder updatedReminder) async {
+    // Cancel existing notification
+    try {
+      await _notificationService.cancelNotification(updatedReminder.id);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to cancel existing notification: $e');
+      }
+    }
+    
     state = [
       for (final reminder in state)
         if (reminder.id == updatedReminder.id)
@@ -21,9 +46,35 @@ class ReminderNotifier extends StateNotifier<List<Reminder>> {
         else
           reminder,
     ];
+    
+    // Schedule new notification if not completed
+    if (!updatedReminder.isCompleted) {
+      try {
+        await _notificationService.scheduleLocalNotification(updatedReminder);
+        if (kDebugMode) {
+          print('📅 Notification rescheduled for: ${updatedReminder.title} at ${updatedReminder.dateTime}');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('❌ Failed to reschedule notification: $e');
+        }
+      }
+    }
   }
 
-  void deleteReminder(String id) {
+  Future<void> deleteReminder(String id) async {
+    // Cancel notification for the reminder
+    try {
+      await _notificationService.cancelNotification(id);
+      if (kDebugMode) {
+        print('❌ Notification cancelled for reminder: $id');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to cancel notification: $e');
+      }
+    }
+    
     state = state.where((reminder) => reminder.id != id).toList();
   }
 
@@ -91,8 +142,14 @@ class ReminderNotifier extends StateNotifier<List<Reminder>> {
   }
 }
 
+// Notification service provider
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationServiceImpl();
+});
+
 final remindersProvider = StateNotifierProvider<ReminderNotifier, List<Reminder>>((ref) {
-  return ReminderNotifier();
+  final notificationService = ref.read(notificationServiceProvider);
+  return ReminderNotifier(notificationService);
 });
 
 // Computed providers for different reminder categories

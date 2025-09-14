@@ -1,6 +1,9 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:flutter/foundation.dart';
 import '../../features/reminders/domain/reminder.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/errors/exceptions.dart';
@@ -34,6 +37,9 @@ class NotificationServiceImpl implements NotificationService {
   @override
   Future<void> initialize() async {
     try {
+      // Initialize timezone database
+      tz.initializeTimeZones();
+      
       await _initializeLocalNotifications();
       await initializeFCM();
     } catch (e) {
@@ -216,9 +222,23 @@ class NotificationServiceImpl implements NotificationService {
   }
 
   // Helper method to convert DateTime to TZDateTime
-  // Note: In a real app, you'd use the timezone package
-  dynamic _convertToTZDateTime(DateTime dateTime) {
-    return dateTime; // Simplified for now
+  tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
+    try {
+      // Initialize timezone database if not already done
+      if (tz.timeZoneDatabase.locations.isEmpty) {
+        tz.initializeTimeZones();
+      }
+      
+      final location = tz.getLocation('UTC');
+      return tz.TZDateTime.from(dateTime, location);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Timezone conversion error: $e');
+      }
+      // Fallback to UTC if timezone fails
+      return tz.TZDateTime.utc(dateTime.year, dateTime.month, dateTime.day, 
+                               dateTime.hour, dateTime.minute, dateTime.second);
+    }
   }
 
   @override

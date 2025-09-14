@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/reminders/domain/reminder.dart';
 import '../../core/utils/date_utils.dart';
 import '../../core/utils/validation_utils.dart';
+import '../../features/reminders/presentation/widgets/sound_settings_widget.dart';
 import '../providers/reminder_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -23,6 +24,8 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   RepeatOption _repeatOption = RepeatOption.none;
+  String? _selectedSoundUrl;
+  String? _selectedSoundName;
 
   @override
   void initState() {
@@ -43,114 +46,130 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Icon(
-                      Icons.add_task,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Add Reminder',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.add_task,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Title Field
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Title *',
-                    hintText: 'Enter reminder title',
-                    prefixIcon: Icon(Icons.title),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Add Reminder',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
                   ),
-                  validator: (value) => ValidationUtils.getReminderTitleError(value ?? ''),
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                // Description Field
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    hintText: 'Enter description (optional)',
-                    prefixIcon: Icon(Icons.description),
+                  // Title Field
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Title *',
+                      hintText: 'Enter reminder title',
+                      prefixIcon: Icon(Icons.title),
+                    ),
+                    validator: (value) => ValidationUtils.getReminderTitleError(value ?? ''),
+                    textCapitalization: TextCapitalization.sentences,
                   ),
-                  validator: (value) => ValidationUtils.getReminderDescriptionError(value ?? ''),
-                  maxLines: 3,
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Date Picker
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today),
-                  title: const Text('Date'),
-                  subtitle: Text(AppDateUtils.formatDate(_selectedDate)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _selectDate,
-                ),
-                const Divider(),
-
-                // Time Picker
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.access_time),
-                  title: const Text('Time'),
-                  subtitle: Text(_selectedTime.format(context)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _selectTime,
-                ),
-                const Divider(),
-
-                // Repeat Option
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.repeat),
-                  title: const Text('Repeat'),
-                  subtitle: Text(_getRepeatText(_repeatOption)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _selectRepeatOption,
-                ),
-                const SizedBox(height: 24),
-
-                // Action Buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                  // Description Field
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'Enter description (optional)',
+                      prefixIcon: Icon(Icons.description),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _saveReminder,
-                      child: const Text('Save'),
-                    ),
-                  ],
-                ),
-              ],
+                    validator: (value) => ValidationUtils.getReminderDescriptionError(value ?? ''),
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Date Picker
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.calendar_today),
+                    title: const Text('Date'),
+                    subtitle: Text(AppDateUtils.formatDate(_selectedDate)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _selectDate,
+                  ),
+                  const Divider(),
+
+                  // Time Picker
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.access_time),
+                    title: const Text('Time'),
+                    subtitle: Text(_selectedTime.format(context)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _selectTime,
+                  ),
+                  const Divider(),
+
+                  // Repeat Option
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.repeat),
+                    title: const Text('Repeat'),
+                    subtitle: Text(_getRepeatText(_repeatOption)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _selectRepeatOption,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Sound Settings
+                  SoundSettingsWidget(
+                    selectedSoundUrl: _selectedSoundUrl,
+                    selectedSoundName: _selectedSoundName,
+                    onSoundChanged: (soundUrl, soundName) {
+                      setState(() {
+                        _selectedSoundUrl = soundUrl;
+                        _selectedSoundName = soundName;
+                      });
+                    },
+                    userId: ref.read(authProvider).user?.id ?? 'local_user',
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _saveReminder,
+                        child: const Text('Save'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -244,6 +263,8 @@ class _AddReminderDialogState extends ConsumerState<AddReminderDialog> {
       dateTime: dateTime,
       repeatOption: _repeatOption,
       userId: userId,
+      soundUrl: _selectedSoundUrl,
+      soundName: _selectedSoundName,
     );
 
     ref.read(remindersProvider.notifier).addReminder(reminder);
