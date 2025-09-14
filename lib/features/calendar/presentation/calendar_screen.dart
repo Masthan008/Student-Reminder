@@ -4,6 +4,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../reminders/domain/reminder.dart';
 import '../../../shared/providers/reminder_provider.dart';
+import '../../../shared/widgets/add_reminder_dialog.dart';
+import '../../../shared/widgets/edit_reminder_dialog.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -278,47 +280,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     showDialog(
       context: context,
       builder: (context) => EditReminderDialog(reminder: reminder),
-    );
-  }
-}
-
-// Placeholder dialogs - will be implemented next
-class AddReminderDialog extends StatelessWidget {
-  final DateTime selectedDate;
-
-  const AddReminderDialog({super.key, required this.selectedDate});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add Reminder'),
-      content: const Text('Add reminder dialog coming soon...'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ],
-    );
-  }
-}
-
-class EditReminderDialog extends StatelessWidget {
-  final Reminder reminder;
-
-  const EditReminderDialog({super.key, required this.reminder});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Edit Reminder'),
-      content: const Text('Edit reminder dialog coming soon...'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ],
     );
   }
 }

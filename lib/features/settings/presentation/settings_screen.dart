@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../shared/providers/theme_provider.dart';
 import '../../../shared/providers/auth_provider.dart';
 
@@ -74,7 +75,8 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  // TODO: Navigate to auth screen
+                  // Navigate to auth screen
+                  context.go('/auth');
                 },
                 child: const Text('Sign In'),
               ),

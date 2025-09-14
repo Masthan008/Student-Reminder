@@ -35,8 +35,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authState.user != null;
       final isLoggingIn = state.matchedLocation == '/auth';
       
-      // For demo purposes, skip auth and go directly to home
-      if (state.matchedLocation == '/') {
+      // Redirect to auth if not logged in
+      if (!isLoggedIn && !isLoggingIn && state.matchedLocation != '/') {
+        return '/auth';
+      }
+      
+      // Redirect to home if logged in and trying to access auth
+      if (isLoggedIn && isLoggingIn) {
+        return '/home';
+      }
+      
+      // Redirect from splash to auth if not logged in
+      if (state.matchedLocation == '/' && !isLoggedIn) {
+        return '/auth';
+      }
+      
+      // Redirect from splash to home if logged in
+      if (state.matchedLocation == '/' && isLoggedIn) {
         return '/home';
       }
       

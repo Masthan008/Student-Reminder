@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/date_utils.dart';
 import '../domain/reminder.dart';
 import '../../../shared/providers/reminder_provider.dart';
+import '../../../shared/widgets/add_reminder_dialog.dart';
+import '../../../shared/widgets/edit_reminder_dialog.dart';
 
 class RemindersScreen extends ConsumerStatefulWidget {
   const RemindersScreen({super.key});
@@ -419,16 +421,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   }
 
   void _showAddReminderDialog() {
-    // TODO: Implement add reminder dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add reminder dialog coming soon...')),
+    showDialog(
+      context: context,
+      builder: (context) => const AddReminderDialog(),
     );
   }
 
   void _showEditReminderDialog(Reminder reminder) {
-    // TODO: Implement edit reminder dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit reminder dialog coming soon...')),
+    showDialog(
+      context: context,
+      builder: (context) => EditReminderDialog(reminder: reminder),
     );
   }
 

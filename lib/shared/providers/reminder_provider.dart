@@ -2,52 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/reminders/domain/reminder.dart';
 
 class ReminderNotifier extends StateNotifier<List<Reminder>> {
-  ReminderNotifier() : super([]) {
-    _loadSampleData();
-  }
-
-  void _loadSampleData() {
-    // Add some sample reminders for demonstration
-    final now = DateTime.now();
-    final sampleReminders = [
-      Reminder.create(
-        title: 'Math Assignment Due',
-        description: 'Complete calculus homework chapter 5',
-        dateTime: now.add(const Duration(hours: 2)),
-        repeatOption: RepeatOption.none,
-        userId: 'demo_user',
-      ),
-      Reminder.create(
-        title: 'Study for Physics Exam',
-        description: 'Review chapters 1-3 for midterm exam',
-        dateTime: now.add(const Duration(days: 1)),
-        repeatOption: RepeatOption.none,
-        userId: 'demo_user',
-      ),
-      Reminder.create(
-        title: 'Weekly Team Meeting',
-        description: 'Project discussion and progress update',
-        dateTime: now.add(const Duration(days: 2)),
-        repeatOption: RepeatOption.weekly,
-        userId: 'demo_user',
-      ),
-      Reminder.create(
-        title: 'Library Books Return',
-        description: 'Return borrowed books to avoid late fees',
-        dateTime: now.add(const Duration(days: 3)),
-        repeatOption: RepeatOption.none,
-        userId: 'demo_user',
-      ),
-      Reminder.create(
-        title: 'Daily Exercise',
-        description: '30 minutes of cardio workout',
-        dateTime: now.add(const Duration(hours: 1)),
-        repeatOption: RepeatOption.daily,
-        userId: 'demo_user',
-      ),
-    ];
-
-    state = sampleReminders;
+  ReminderNotifier() : super([]);
+  
+  // Load reminders from local storage when initialized
+  void loadReminders(List<Reminder> reminders) {
+    state = reminders;
   }
 
   void addReminder(Reminder reminder) {
