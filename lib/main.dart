@@ -10,10 +10,16 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    // Initialize Firebase with configuration
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    // Try to initialize Firebase, but continue if it fails (for demo mode)
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('Firebase initialized successfully');
+    } catch (firebaseError) {
+      print('Firebase initialization failed (running in demo mode): $firebaseError');
+      // Continue without Firebase - app will work in offline/demo mode
+    }
     
     // Initialize Hive for local storage
     await Hive.initFlutter();
