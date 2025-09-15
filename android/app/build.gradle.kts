@@ -9,8 +9,7 @@ plugins {
 
 android {
     namespace = "com.example.student_reminder_app"
-    compileSdk = 36  // Updated to support latest plugins
-    ndkVersion = "27.0.12077973"  // Updated to support Firebase plugins
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -28,14 +27,14 @@ android {
         applicationId = "com.example.student_reminder_app"
         
         // SDK Versions
-        minSdk = flutter.minSdkVersion      // Android 5.0 (API level 21) - Required for Firebase
-        targetSdk = 34   // Android 14 (API level 34) - Latest stable
+        minSdk = flutter.minSdkVersion
+        targetSdk = 36
         
         // App Version
         versionCode = 1
         versionName = "1.0.0"
         
-        // Multidex support for Firebase
+        // Multidex support
         multiDexEnabled = true
         
         // Test instrumentation runner
@@ -47,6 +46,14 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            
+            // Add proguard rules
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+        
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
@@ -54,6 +61,13 @@ android {
 dependencies {
     // Core library desugaring for flutter_local_notifications
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    
+    // Add explicit dependencies for workmanager compatibility
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
+    
+    // Multidex support
+    implementation("androidx.multidex:multidex:2.0.1")
 }
 
 flutter {

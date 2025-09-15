@@ -4,9 +4,89 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter/foundation.dart';
+import 'package:workmanager/workmanager.dart';
 import '../../features/reminders/domain/reminder.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/errors/exceptions.dart';
+import 'sound_storage_service.dart';
+
+// Helper method to create notification details with proper sound handling
+Future<NotificationDetails> _createNotificationDetails({
+  required bool hasCustomSound,
+  String? soundUrl,
+  String? soundName,
+}) async {
+  AndroidNotificationDetails androidDetails;
+  
+  if (hasCustomSound && soundUrl != null && soundUrl.isNotEmpty) {
+    // Handle custom sound
+    String? soundPath;
+    
+    // For custom sounds, we need to download and cache locally
+    if (!kIsWeb) {
+      try {
+        final soundService = SoundStorageService();
+        // Extract sound ID from URL for caching
+        final soundId = soundUrl.split('/').last.split('.').first;
+        soundPath = await soundService.downloadAndCacheSound(
+          soundUrl: soundUrl,
+          soundId: soundId,
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          print('Failed to download/cache custom sound: $e');
+        }
+      }
+    }
+    
+    // Use custom sound if available, otherwise fallback to default
+    if (soundPath != null && soundPath.isNotEmpty) {
+      androidDetails = AndroidNotificationDetails(
+        AppConstants.notificationChannelId,
+        AppConstants.notificationChannelName,
+        channelDescription: AppConstants.notificationChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        icon: '@mipmap/ic_launcher',
+        sound: UriAndroidNotificationSound(soundPath),
+      );
+    } else {
+      // Fallback to default sound
+      androidDetails = AndroidNotificationDetails(
+        AppConstants.notificationChannelId,
+        AppConstants.notificationChannelName,
+        channelDescription: AppConstants.notificationChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        icon: '@mipmap/ic_launcher',
+      );
+    }
+  } else {
+    // Use default sound
+    androidDetails = const AndroidNotificationDetails(
+      AppConstants.notificationChannelId,
+      AppConstants.notificationChannelName,
+      channelDescription: AppConstants.notificationChannelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+    );
+  }
+
+  const iosDetails = DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+  );
+
+  return NotificationDetails(
+    android: androidDetails,
+    iOS: iosDetails,
+  );
+}
 
 abstract class NotificationService {
   // Initialization
@@ -26,6 +106,10 @@ abstract class NotificationService {
   
   // Notification handling
   void setNotificationTapCallback(Function(String reminderId) callback);
+  
+  // Persistent scheduling
+  Future<void> schedulePersistentNotification(Reminder reminder);
+  Future<void> initializePersistentScheduling();
 }
 
 class NotificationServiceImpl implements NotificationService {
@@ -42,6 +126,7 @@ class NotificationServiceImpl implements NotificationService {
       
       await _initializeLocalNotifications();
       await initializeFCM();
+      await initializePersistentScheduling();
     } catch (e) {
       throw NotificationException('Failed to initialize notifications: $e');
     }
@@ -130,25 +215,11 @@ class NotificationServiceImpl implements NotificationService {
         return;
       }
 
-      const androidDetails = AndroidNotificationDetails(
-        AppConstants.notificationChannelId,
-        AppConstants.notificationChannelName,
-        channelDescription: AppConstants.notificationChannelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-        showWhen: true,
-        icon: '@mipmap/ic_launcher',
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
+      // Handle custom sound
+      final NotificationDetails notificationDetails = await _createNotificationDetails(
+        hasCustomSound: reminder.soundUrl != null && reminder.soundUrl!.isNotEmpty,
+        soundUrl: reminder.soundUrl,
+        soundName: reminder.soundName,
       );
 
       await _localNotifications.zonedSchedule(
@@ -158,14 +229,18 @@ class NotificationServiceImpl implements NotificationService {
         _convertToTZDateTime(reminder.dateTime),
         notificationDetails,
         payload: reminder.id,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
 
       // Schedule recurring notifications if needed
       if (reminder.repeatOption != RepeatOption.none) {
         await _scheduleRecurringNotification(reminder);
       }
+      
+      // Schedule persistent notification for app restart support
+      await schedulePersistentNotification(reminder);
     } catch (e) {
       throw NotificationException('Failed to schedule notification: $e');
     }
@@ -190,24 +265,13 @@ class NotificationServiceImpl implements NotificationService {
       case RepeatOption.none:
         return;
     }
-      const androidDetails = AndroidNotificationDetails(
-        AppConstants.notificationChannelId,
-        AppConstants.notificationChannelName,
-        channelDescription: AppConstants.notificationChannelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
+    
+    // Handle custom sound for recurring notifications
+    final NotificationDetails notificationDetails = await _createNotificationDetails(
+      hasCustomSound: reminder.soundUrl != null && reminder.soundUrl!.isNotEmpty,
+      soundUrl: reminder.soundUrl,
+      soundName: reminder.soundName,
+    );
 
     await _localNotifications.zonedSchedule(
       reminder.id.hashCode + 1000, // Different ID for recurring
@@ -216,8 +280,9 @@ class NotificationServiceImpl implements NotificationService {
       _convertToTZDateTime(reminder.dateTime),
       notificationDetails,
       payload: reminder.id,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: repeatInterval,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -249,6 +314,9 @@ class NotificationServiceImpl implements NotificationService {
       
       // Also cancel recurring notification if it exists
       await _localNotifications.cancel(notificationId + 1000);
+      
+      // Cancel persistent notification
+      await Workmanager().cancelByUniqueName(reminderId);
     } catch (e) {
       throw NotificationException('Failed to cancel notification: $e');
     }
@@ -258,6 +326,7 @@ class NotificationServiceImpl implements NotificationService {
   Future<void> cancelAllNotifications() async {
     try {
       await _localNotifications.cancelAll();
+      await Workmanager().cancelAll();
     } catch (e) {
       throw NotificationException('Failed to cancel all notifications: $e');
     }
@@ -302,23 +371,13 @@ class NotificationServiceImpl implements NotificationService {
   }
 
   Future<void> _showForegroundNotification(RemoteMessage message) async {
-    const androidDetails = AndroidNotificationDetails(
-      AppConstants.notificationChannelId,
-      AppConstants.notificationChannelName,
-      channelDescription: AppConstants.notificationChannelDescription,
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
+    // Handle custom sound for foreground notifications
+    final soundUrl = message.data['soundUrl'] as String?;
+    final soundName = message.data['soundName'] as String?;
+    final NotificationDetails notificationDetails = await _createNotificationDetails(
+      hasCustomSound: soundUrl != null && soundUrl.isNotEmpty,
+      soundUrl: soundUrl,
+      soundName: soundName,
     );
 
     await _localNotifications.show(
@@ -349,6 +408,63 @@ class NotificationServiceImpl implements NotificationService {
   void setNotificationTapCallback(Function(String reminderId) callback) {
     _onNotificationTap = callback;
   }
+  
+  // Persistent scheduling implementation using WorkManager only
+  @override
+  Future<void> schedulePersistentNotification(Reminder reminder) async {
+    if (kIsWeb) return; // Not supported on web
+    
+    try {
+      // Use WorkManager for Android
+      final now = DateTime.now();
+      final delay = reminder.dateTime.difference(now);
+      
+      if (delay.isNegative) return; // Don't schedule past reminders
+      
+      // Schedule with WorkManager
+      await Workmanager().registerOneOffTask(
+        reminder.id, // unique name
+        "reminder_task", // task name
+        initialDelay: delay,
+        inputData: {
+          'reminderId': reminder.id,
+          'title': reminder.title,
+          'description': reminder.description,
+          'dateTime': reminder.dateTime.toIso8601String(),
+          'soundUrl': reminder.soundUrl,
+          'soundName': reminder.soundName,
+        },
+      );
+      
+      if (kDebugMode) {
+        print('Scheduled persistent notification for: ${reminder.title} at ${reminder.dateTime}');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to schedule persistent notification: $e');
+      }
+    }
+  }
+  
+  @override
+  Future<void> initializePersistentScheduling() async {
+    if (kIsWeb) return; // Not supported on web
+    
+    try {
+      // Initialize WorkManager
+      await Workmanager().initialize(
+        callbackDispatcher, // Callback function
+      );
+      
+      if (kDebugMode) {
+        print('WorkManager initialized');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to initialize WorkManager: $e');
+      }
+    }
+  }
 }
 
 // Background message handler (must be top-level function)
@@ -358,4 +474,80 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // In production, you might want to use a proper logging solution
   // ignore: avoid_print
   print('Handling background message: ${message.messageId}');
+}
+
+// WorkManager callback dispatcher (must be top-level function)
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    try {
+      // Handle the scheduled task
+      if (task == "reminder_task" && inputData != null) {
+        final reminderId = inputData['reminderId'] as String;
+        final title = inputData['title'] as String;
+        final description = inputData['description'] as String;
+        final soundUrl = inputData['soundUrl'] as String?;
+        final soundName = inputData['soundName'] as String?;
+        
+        // Show notification
+        final FlutterLocalNotificationsPlugin localNotifications = FlutterLocalNotificationsPlugin();
+        
+        // Android initialization settings
+        const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+        
+        // iOS initialization settings
+        const iosSettings = DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
+
+        const initializationSettings = InitializationSettings(
+          android: androidSettings,
+          iOS: iosSettings,
+        );
+
+        await localNotifications.initialize(initializationSettings);
+        
+        // Create notification channel for Android
+        const androidChannel = AndroidNotificationChannel(
+          AppConstants.notificationChannelId,
+          AppConstants.notificationChannelName,
+          description: AppConstants.notificationChannelDescription,
+          importance: Importance.high,
+          playSound: true,
+        );
+
+        await localNotifications
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+            ?.createNotificationChannel(androidChannel);
+        
+        // Show notification with custom sound if available
+        final NotificationDetails notificationDetails = await _createNotificationDetails(
+          hasCustomSound: soundUrl != null && soundUrl.isNotEmpty,
+          soundUrl: soundUrl,
+          soundName: soundName,
+        );
+        
+        await localNotifications.show(
+          reminderId.hashCode,
+          title,
+          description.isNotEmpty ? description : 'Reminder notification',
+          notificationDetails,
+          payload: reminderId,
+        );
+        
+        if (kDebugMode) {
+          print('Persistent notification shown for: $title');
+        }
+      }
+      
+      return Future.value(true);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error in callback dispatcher: $e');
+      }
+      return Future.value(false);
+    }
+  });
 }

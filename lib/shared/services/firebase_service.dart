@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/reminders/domain/reminder.dart';
 import '../../features/auth/domain/user.dart' as app_user;
 import '../../core/constants/app_constants.dart';
@@ -48,6 +49,28 @@ class FirebaseServiceImpl implements FirebaseService {
       _googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
       );
+    }
+    
+    // Set persistence for authentication state
+    _setAuthPersistence();
+  }
+  
+  // Set authentication persistence to LOCAL for mobile and web
+  Future<void> _setAuthPersistence() async {
+    try {
+      if (kIsWeb) {
+        // For web, set persistence to LOCAL (default is LOCAL, but we're being explicit)
+        await _auth.setPersistence(firebase_auth.Persistence.LOCAL);
+      } else {
+        // For mobile, persistence is LOCAL by default, but we can also use SharedPreferences as fallback
+        final prefs = await SharedPreferences.getInstance();
+        // We'll use this later for additional persistence checks
+      }
+    } catch (e) {
+      // Persistence setting might not be available on all platforms
+      if (kDebugMode) {
+        print('Warning: Could not set auth persistence: $e');
+      }
     }
   }
 
@@ -96,15 +119,23 @@ class FirebaseServiceImpl implements FirebaseService {
         throw AuthException('Google Sign-In is not configured for web platform. Please use email/password authentication.');
       }
 
+      // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (googleUser == null) {
+        // Sign in was cancelled by the user
+        return null;
+      }
 
+      // Authenticate with Firebase
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // Create a new credential
       final credential = firebase_auth.GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
+      // Sign in to Firebase with the Google credential
       final firebase_auth.UserCredential userCredential = 
           await _auth.signInWithCredential(credential);
       
@@ -113,7 +144,12 @@ class FirebaseServiceImpl implements FirebaseService {
       final user = _convertFirebaseUser(userCredential.user!);
       await saveUserData(user);
       
+      // Update last login time
+      await _updateUserLastLogin(user.id);
+      
       return user;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw AuthException('Google sign-in failed: ${e.message}');
     } catch (e) {
       throw AuthException('Google sign-in failed: $e');
     }
@@ -132,7 +168,14 @@ class FirebaseServiceImpl implements FirebaseService {
       if (userCredential.user == null) return null;
 
       final userData = await getUserData(userCredential.user!.uid);
-      return userData ?? _convertFirebaseUser(userCredential.user!);
+      final user = userData ?? _convertFirebaseUser(userCredential.user!);
+      
+      // Update last login time
+      await _updateUserLastLogin(user.id);
+      
+      return user;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw AuthException('Email sign-in failed: ${e.message}');
     } catch (e) {
       throw AuthException('Email sign-in failed: $e');
     }
@@ -162,6 +205,8 @@ class FirebaseServiceImpl implements FirebaseService {
 
       await saveUserData(user);
       return user;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw AuthException('Account creation failed: ${e.message}');
     } catch (e) {
       throw AuthException('Account creation failed: $e');
     }
@@ -176,6 +221,23 @@ class FirebaseServiceImpl implements FirebaseService {
       ]);
     } catch (e) {
       throw AuthException('Sign out failed: $e');
+    }
+  }
+  
+  // Helper method to update user's last login time
+  Future<void> _updateUserLastLogin(String userId) async {
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .update({
+            'lastLoginAt': DateTime.now().toIso8601String(),
+          });
+    } catch (e) {
+      // Don't throw error for this, as it's not critical
+      if (kDebugMode) {
+        print('Warning: Could not update last login time: $e');
+      }
     }
   }
 

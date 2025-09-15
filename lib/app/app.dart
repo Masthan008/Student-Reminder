@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'theme/app_theme.dart';
 import '../shared/providers/theme_provider.dart';
 import '../shared/providers/auth_provider.dart';
+import '../shared/widgets/reminder_loader.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/auth/presentation/auth_screen.dart';
 
@@ -78,7 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const ReminderLoader(child: HomeScreen()),
       ),
     ],
   );

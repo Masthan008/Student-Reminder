@@ -1,20 +1,47 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import '../../features/reminders/domain/reminder.dart';
+import '../../features/reminders/data/hybrid_reminders_repository.dart';
 import '../services/notification_service.dart';
+import '../providers/firebase_provider.dart';
+import '../providers/storage_provider.dart';
+import '../services/local_storage_service.dart';
 
 class ReminderNotifier extends StateNotifier<List<Reminder>> {
   final NotificationService _notificationService;
+  final HybridRemindersRepository _remindersRepository;
   
-  ReminderNotifier(this._notificationService) : super([]);
+  ReminderNotifier(this._notificationService, this._remindersRepository) : super([]);
   
   // Load reminders from local storage when initialized
-  void loadReminders(List<Reminder> reminders) {
-    state = reminders;
+  Future<void> loadReminders(String userId) async {
+    try {
+      // Initialize local reminders for immediate display
+      await _remindersRepository.initializeLocalReminders(userId);
+      
+      // Load reminders from local storage
+      final localStorageService = HiveLocalStorageService();
+      await localStorageService.initialize();
+      final localReminders = await localStorageService.getReminders();
+      final userReminders = localReminders.where((r) => r.userId == userId).toList();
+      
+      state = userReminders;
+      
+      if (kDebugMode) {
+        print('Loaded ${userReminders.length} reminders from local storage');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading reminders: $e');
+      }
+    }
   }
 
   Future<void> addReminder(Reminder reminder) async {
     state = [...state, reminder];
+    
+    // Add to repository (handles both local and cloud storage)
+    await _remindersRepository.addReminder(reminder);
     
     // Schedule notification for the reminder
     try {
@@ -47,6 +74,9 @@ class ReminderNotifier extends StateNotifier<List<Reminder>> {
           reminder,
     ];
     
+    // Update in repository (handles both local and cloud storage)
+    await _remindersRepository.updateReminder(updatedReminder);
+    
     // Schedule new notification if not completed
     if (!updatedReminder.isCompleted) {
       try {
@@ -76,6 +106,9 @@ class ReminderNotifier extends StateNotifier<List<Reminder>> {
     }
     
     state = state.where((reminder) => reminder.id != id).toList();
+    
+    // Delete from repository (handles both local and cloud storage)
+    await _remindersRepository.deleteReminder(id);
   }
 
   void toggleComplete(String id) {
@@ -140,6 +173,11 @@ class ReminderNotifier extends StateNotifier<List<Reminder>> {
   List<Reminder> getCompletedReminders() {
     return state.where((reminder) => reminder.isCompleted).toList();
   }
+  
+  // Method to sync reminders with cloud
+  Future<void> syncWithCloud(String userId) async {
+    await _remindersRepository.syncRemindersWithCloud(userId);
+  }
 }
 
 // Notification service provider
@@ -147,9 +185,17 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationServiceImpl();
 });
 
+// Hybrid reminders repository provider
+final hybridRemindersRepositoryProvider = Provider<HybridRemindersRepository>((ref) {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  final localStorageService = ref.read(localStorageServiceProvider);
+  return HybridRemindersRepositoryImpl(firebaseService, localStorageService);
+});
+
 final remindersProvider = StateNotifierProvider<ReminderNotifier, List<Reminder>>((ref) {
   final notificationService = ref.read(notificationServiceProvider);
-  return ReminderNotifier(notificationService);
+  final remindersRepository = ref.read(hybridRemindersRepositoryProvider);
+  return ReminderNotifier(notificationService, remindersRepository);
 });
 
 // Computed providers for different reminder categories

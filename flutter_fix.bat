@@ -1,0 +1,23 @@
+@echo off
+echo Flutter-specific fix for Student Reminder App...
+
+echo 1. Cleaning Flutter project...
+flutter clean
+
+echo 2. Repairing pub cache...
+flutter pub cache repair
+
+echo 3. Upgrading Flutter...
+flutter upgrade
+
+echo 4. Getting packages...
+flutter pub get
+
+echo 5. Running build runner...
+dart run build_runner build --delete-conflicting-outputs
+
+echo 6. Building APK...
+flutter build apk
+
+echo Flutter fix process completed.
+pause

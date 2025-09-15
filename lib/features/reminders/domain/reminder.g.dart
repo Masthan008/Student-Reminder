@@ -26,13 +26,15 @@ class ReminderAdapter extends TypeAdapter<Reminder> {
       createdAt: fields[6] as DateTime,
       updatedAt: fields[7] as DateTime,
       userId: fields[8] as String,
+      soundUrl: fields[9] as String?,
+      soundName: fields[10] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Reminder obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +52,11 @@ class ReminderAdapter extends TypeAdapter<Reminder> {
       ..writeByte(7)
       ..write(obj.updatedAt)
       ..writeByte(8)
-      ..write(obj.userId);
+      ..write(obj.userId)
+      ..writeByte(9)
+      ..write(obj.soundUrl)
+      ..writeByte(10)
+      ..write(obj.soundName);
   }
 
   @override

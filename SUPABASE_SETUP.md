@@ -84,7 +84,63 @@ CREATE TRIGGER update_reminders_updated_at BEFORE UPDATE ON reminders
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
-## 🔧 **3. Configure Your App**
+## 🔊 **3. Storage Setup for Custom Sounds**
+
+Due to permission restrictions in Supabase, it's recommended to set up storage through the dashboard UI rather than SQL scripts to avoid ownership errors:
+
+### Method 1: Dashboard UI Setup (Recommended)
+1. Go to your Supabase project dashboard
+2. Navigate to **Storage** → **Buckets**
+3. Click **New Bucket**
+4. Name it **sounds**
+5. Set it as **Public**
+6. Click **Create**
+
+### Method 2: SQL Setup (If you have proper permissions)
+If you have the necessary permissions, you can run the script in `SUPABASE_STORAGE_SETUP_FIXED.sql`:
+
+```sql
+-- Policy for authenticated users to upload sounds to their folder
+CREATE POLICY "Users can upload sounds to their folder" 
+ON storage.objects FOR INSERT 
+TO authenticated 
+WITH CHECK (
+  bucket_id = 'sounds' 
+  AND (storage.foldername(name))[1] = 'user_sounds'
+  AND (storage.foldername(name))[2] = (auth.uid())::text
+);
+
+-- Policy for users to read their own sounds
+CREATE POLICY "Users can read their own sounds" 
+ON storage.objects FOR SELECT 
+TO authenticated 
+USING (
+  bucket_id = 'sounds' 
+  AND (storage.foldername(name))[1] = 'user_sounds'
+  AND (storage.foldername(name))[2] = (auth.uid())::text
+);
+
+-- Policy for users to delete their own sounds
+CREATE POLICY "Users can delete their own sounds" 
+ON storage.objects FOR DELETE 
+TO authenticated 
+USING (
+  bucket_id = 'sounds' 
+  AND (storage.foldername(name))[1] = 'user_sounds'
+  AND (storage.foldername(name))[2] = (auth.uid())::text
+);
+
+-- Policy for public to read sounds (needed for playing sounds)
+CREATE POLICY "Public can read sounds" 
+ON storage.objects FOR SELECT 
+TO public 
+USING (bucket_id = 'sounds');
+
+-- Enable RLS on storage.objects
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+```
+
+## 🔧 **4. Configure Your App**
 
 Update the Supabase service configuration:
 
@@ -96,7 +152,7 @@ static const String _supabaseUrl = 'https://your-project-id.supabase.co';
 static const String _supabaseAnonKey = 'your-anon-public-key';
 ```
 
-## 🔐 **4. Authentication Setup**
+## 🔐 **5. Authentication Setup**
 
 ### Email/Password Authentication
 Already configured! Email/password authentication will work out of the box.
@@ -107,7 +163,7 @@ Already configured! Email/password authentication will work out of the box.
 3. Add your Google OAuth credentials
 4. Update the redirect URL in the Supabase service
 
-## 📱 **5. Testing the Integration**
+## 📱 **6. Testing the Integration**
 
 1. **Install dependencies**:
    ```bash
@@ -128,8 +184,9 @@ Already configured! Email/password authentication will work out of the box.
    - Create reminders
    - Verify real-time sync
    - Test offline/online sync
+   - Upload custom sounds
 
-## 🎯 **6. Features You Get with Supabase**
+## 🎯 **7. Features You Get with Supabase**
 
 ✅ **Real-time Updates**: Changes sync instantly across devices  
 ✅ **PostgreSQL Database**: More powerful than Firestore  
@@ -137,9 +194,9 @@ Already configured! Email/password authentication will work out of the box.
 ✅ **RESTful API**: Easy to extend and customize  
 ✅ **Built-in Auth**: Email, OAuth, magic links  
 ✅ **Edge Functions**: Serverless functions when needed  
-✅ **Storage**: File uploads (can be added later)  
+✅ **Storage**: File uploads for custom sounds  
 
-## 🔄 **7. Migration Strategy**
+## 🔄 **8. Migration Strategy**
 
 The app now supports **dual backend mode**:
 
@@ -148,7 +205,7 @@ The app now supports **dual backend mode**:
 3. **Gradual Migration**: Users can switch backends in settings
 4. **Data Export**: Plan data migration tools (future enhancement)
 
-## 🛠️ **8. Backend Comparison**
+## 🛠️ **9. Backend Comparison**
 
 | Feature | Firebase | Supabase |
 |---------|----------|----------|
@@ -160,18 +217,20 @@ The app now supports **dual backend mode**:
 | Query Flexibility | Limited | SQL queries |
 | Open Source | No | Yes |
 
-## 🐛 **9. Troubleshooting**
+## 🐛 **10. Troubleshooting**
 
 ### Common Issues:
 
 1. **"Invalid API Key"**: Check your Supabase URL and anon key
 2. **RLS Policy Errors**: Ensure Row Level Security policies are correctly set
 3. **Connection Timeout**: Check your internet connection and Supabase status
+4. **Storage Permission Errors**: Use the dashboard UI method for storage setup
+5. **Ownership Errors**: When running SQL scripts, make sure you have proper permissions
 
 ### Debug Mode:
 The app includes debug logging. Check console for Supabase connection status.
 
-## 📞 **10. Support**
+## 📞 **11. Support**
 
 - **Supabase Documentation**: [docs.supabase.com](https://docs.supabase.com)
 - **Flutter Supabase Docs**: [supabase.com/docs/guides/getting-started/tutorials/with-flutter](https://supabase.com/docs/guides/getting-started/tutorials/with-flutter)

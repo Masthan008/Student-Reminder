@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
+    <!-- WorkManager and AlarmManager permissions -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    
     <!-- Network state for connectivity checking -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
@@ -52,6 +56,23 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        
+        <!-- WorkManager initialization -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+        
+        <receiver android:name="androidx.work.impl.WorkManagerInitializer"
+            android:exported="false"
+            android:enabled="false" />
+            
+        <!-- Android Alarm Manager Plus Receiver -->
+        <receiver android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmBroadcastReceiver"
+            android:exported="false"/>
+        <service android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

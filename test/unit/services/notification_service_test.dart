@@ -71,6 +71,17 @@ class MockNotificationService implements NotificationService {
     _onNotificationTap = callback;
   }
 
+  @override
+  Future<void> schedulePersistentNotification(Reminder reminder) async {
+    // Mock implementation - just add to scheduled notifications
+    _scheduledNotifications.add('${reminder.id}_persistent');
+  }
+
+  @override
+  Future<void> initializePersistentScheduling() async {
+    // Mock implementation - do nothing
+  }
+
   // Test helper methods
   List<String> get scheduledNotifications => List.unmodifiable(_scheduledNotifications);
   List<String> get cancelledNotifications => List.unmodifiable(_cancelledNotifications);
